@@ -10,10 +10,10 @@ namespace EventEase.Controllers
         {
             return View();
         }
-
+           
         public IActionResult Privacy()
         {
-            return View();
+            return View();   
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

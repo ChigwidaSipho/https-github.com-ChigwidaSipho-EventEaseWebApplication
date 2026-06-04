@@ -190,12 +190,12 @@ namespace EventEase.Controllers
                 "VenueID",
                 "VenueName", 
                 selectedEvent?.VenueID
-            );
+            ); 
                
             ViewBag.EventTypeID = new SelectList(
                 _context.EventType,
                 "EventTypeID",
-                "TypeName",
+                "TypeName",   
                 selectedEvent?.EventTypeID
             );
         }
