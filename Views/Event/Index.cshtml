@@ -4,88 +4,84 @@
     ViewData["Title"] = "Events";
 }
 
-<h1>Index</h1>
+<div class="container mt-5">
 
-<!-- 🔥 TEMP DATA ALERT BLOCK (STEP 4b) -->
-@if (TempData["ErrorMessage"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @TempData["ErrorMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
-@if (TempData["SuccessMessage"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["SuccessMessage"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-}
-
-<div class="container mt-4">
-
-    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fw-bold">Events</h2>
-        <a asp-action="Create" class="btn btn-primary shadow-sm">
-            + Create Event
-        </a>
+        <a asp-action="Create" class="btn btn-primary shadow-sm">+ New Event</a>
     </div>
 
-    <!-- Table Card -->
-    <div class="card shadow-lg border-0 rounded-4">
-        <div class="card-body">
+    <form method="get" class="row g-2 mb-3">
 
-            <table class="table table-hover align-middle">
+        <div class="col-md-3">
+            <select name="eventType" class="form-control">
+                <option value="">All Types</option>
+                <option value="Conference">Conference</option>
+                <option value="Wedding">Wedding</option>
+                <option value="Workshop">Workshop</option>
+                <option value="Festival">Festival</option>
+                <option value="Networking">Networking</option>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <input type="date" name="startDate" class="form-control" />
+        </div>
+
+        <div class="col-md-3">
+            <input type="date" name="endDate" class="form-control" />
+        </div>
+
+        <div class="col-md-2 d-flex align-items-center">
+            <input type="checkbox" name="isAvailable" value="true" class="me-2" />
+            Available Only
+        </div>
+
+        <div class="col-md-1">
+            <button class="btn btn-primary w-100">Search</button>
+        </div>
+
+    </form>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="card shadow-lg border-0">
+        <div class="card-body p-0">
+
+            <table class="table table-hover align-middle mb-0">
                 <thead class="table-dark">
                     <tr>
-                        <th>@Html.DisplayNameFor(model => model.EventName)</th>
-                        <th>@Html.DisplayNameFor(model => model.EventDate)</th>
-                        <th>@Html.DisplayNameFor(model => model.Description)</th>
-                        <th>@Html.DisplayNameFor(model => model.Venue)</th>
+                        <th>Name</th>
+                        <th>Date</th>
+                        <th>Venue</th>
+                        <th>Type</th>
                         <th class="text-center">Actions</th>
                     </tr>
                 </thead>
-
                 <tbody>
                     @foreach (var item in Model)
                     {
                         <tr>
-                            <td class="fw-semibold">@item.EventName</td>
-
-                            <td>
-                                @item.EventDate.ToString("dd MMM yyyy")
-                            </td>
-
-                            <td class="text-muted">
-                                @item.Description
-                            </td>
-
-                            <td>
-                                📍 @item.Venue.Location
-                            </td>
-
+                            <td>@item.EventName</td>
+                            <td>@item.EventDate.ToString("dd MMM yyyy HH:mm")</td>
+                            <td>@item.Venue?.VenueName</td>
+                            <td>@item.EventType?.TypeName</td>
                             <td class="text-center">
-                                <a asp-action="Edit" asp-route-id="@item.EventID"
-                                       class="btn btn-sm btn-outline-warning me-1">
-                                    Edit
-                                </a>
-
-                                <a asp-action="Details" asp-route-id="@item.EventID"
-                                       class="btn btn-sm btn-outline-info me-1">
-                                    Details
-                                </a>
-
-                                <a asp-action="Delete" asp-route-id="@item.EventID"
-                                       class="btn btn-sm btn-outline-danger">
-                                    Delete
-                                </a>
+                                <a asp-action="Edit" asp-route-id="@item.EventID" class="btn btn-sm btn-warning me-1">Edit</a>
+                                <a asp-action="Details" asp-route-id="@item.EventID" class="btn btn-sm btn-info text-white me-1">Details</a>
+                                <a asp-action="Delete" asp-route-id="@item.EventID" class="btn btn-sm btn-danger">Delete</a>
                             </td>
                         </tr>
                     }
                 </tbody>
-
             </table>
 
         </div>

@@ -13,6 +13,8 @@ namespace EventEase.Models
         public DbSet<Event> Event { get; set; }
         public DbSet<Booking> Booking { get; set; }
 
+        public DbSet<EventType> EventType { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

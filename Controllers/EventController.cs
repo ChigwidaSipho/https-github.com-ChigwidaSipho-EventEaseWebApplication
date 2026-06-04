@@ -1,7 +1,8 @@
 ﻿using EventEase.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using EventEase.Services;
 
 namespace EventEase.Controllers
 {
@@ -14,28 +15,53 @@ namespace EventEase.Controllers
             _context = context;
         }
 
-        public async Task<IActionResult> Index()
+        // =========================
+        // INDEX + FILTERING
+        // =========================
+        public async Task<IActionResult> Index(string eventType, DateTime? startDate, DateTime? endDate, bool? isAvailable)
         {
-            var events = await _context.Event
+            var events = _context.Event
                 .Include(e => e.Venue)
-                .ToListAsync();
+                .Include(e => e.EventType)
+                .AsQueryable();
 
-            return View(events);
+            if (!string.IsNullOrEmpty(eventType))
+                events = events.Where(e => e.EventType != null && e.EventType.TypeName == eventType);
+
+            if (startDate.HasValue)
+                events = events.Where(e => e.EventDate >= startDate.Value);
+
+            if (endDate.HasValue)
+                events = events.Where(e => e.EventDate <= endDate.Value);
+
+            if (isAvailable.HasValue)
+                events = events.Where(e => e.Venue != null && e.Venue.IsAvailable == isAvailable.Value);
+
+            return View(await events.ToListAsync());
         }
 
+        // =========================
+        // CREATE (GET)
+        // =========================
         public IActionResult Create()
         {
-            ViewBag.VenueID = new SelectList(_context.Venue, "VenueID", "VenueName");
+            LoadDropdowns();
             return View();
         }
 
+        // =========================
+        // CREATE (POST)
+        // =========================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Event @event)
         {
+            ModelState.Remove("Venue");
+            ModelState.Remove("EventType");
+
             if (!ModelState.IsValid)
             {
-                ViewBag.VenueID = new SelectList(_context.Venue, "VenueID", "VenueName", @event.VenueID);
+                LoadDropdowns(@event);
                 return View(@event);
             }
 
@@ -46,6 +72,9 @@ namespace EventEase.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        // =========================
+        // EDIT (GET)
+        // =========================
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null) return NotFound();
@@ -53,35 +82,54 @@ namespace EventEase.Controllers
             var @event = await _context.Event.FindAsync(id);
             if (@event == null) return NotFound();
 
-            ViewBag.VenueID = new SelectList(_context.Venue, "VenueID", "VenueName", @event.VenueID);
+            LoadDropdowns(@event);
             return View(@event);
         }
 
+        // =========================
+        // EDIT (POST)
+        // =========================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Event @event)
         {
             if (id != @event.EventID) return NotFound();
 
+            ModelState.Remove("Venue");
+            ModelState.Remove("EventType");
+
             if (!ModelState.IsValid)
             {
-                ViewBag.VenueID = new SelectList(_context.Venue, "VenueID", "VenueName", @event.VenueID);
+                LoadDropdowns(@event);
                 return View(@event);
             }
 
-            _context.Update(@event);
-            await _context.SaveChangesAsync();
+            try
+            {
+                _context.Update(@event);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!_context.Event.Any(e => e.EventID == @event.EventID))
+                    return NotFound();
+                throw;
+            }
 
             TempData["SuccessMessage"] = "Event updated successfully.";
             return RedirectToAction(nameof(Index));
         }
 
+        // =========================
+        // DETAILS
+        // =========================
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null) return NotFound();
 
             var @event = await _context.Event
                 .Include(e => e.Venue)
+                .Include(e => e.EventType)
                 .FirstOrDefaultAsync(e => e.EventID == id);
 
             if (@event == null) return NotFound();
@@ -89,12 +137,16 @@ namespace EventEase.Controllers
             return View(@event);
         }
 
+        // =========================
+        // DELETE (GET)
+        // =========================
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null) return NotFound();
 
             var @event = await _context.Event
                 .Include(e => e.Venue)
+                .Include(e => e.EventType)
                 .FirstOrDefaultAsync(e => e.EventID == id);
 
             if (@event == null) return NotFound();
@@ -102,24 +154,22 @@ namespace EventEase.Controllers
             return View(@event);
         }
 
+        // =========================
+        // DELETE (POST)
+        // =========================
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var @event = await _context.Event.FindAsync(id);
 
-            if (@event == null)
-                return NotFound();
+            if (@event == null) return NotFound();
 
-            // BLOCK if bookings exist
-            var hasBookings = await _context.Booking
-                .AnyAsync(b => b.EventID == id);
+            var hasBookings = await _context.Booking.AnyAsync(b => b.EventID == id);
 
             if (hasBookings)
             {
-                TempData["ErrorMessage"] =
-                    "Cannot delete event because it has existing bookings.";
-
+                TempData["ErrorMessage"] = "Cannot delete event because it has bookings.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -127,8 +177,27 @@ namespace EventEase.Controllers
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] = "Event deleted successfully.";
-
             return RedirectToAction(nameof(Index));
+        }
+
+        // =========================
+        // HELPER
+        // =========================
+        private void LoadDropdowns(Event selectedEvent = null)
+        {
+            ViewBag.VenueID = new SelectList(
+                _context.Venue,
+                "VenueID",
+                "VenueName",
+                selectedEvent?.VenueID
+            );
+
+            ViewBag.EventTypeID = new SelectList(
+                _context.EventType,
+                "EventTypeID",
+                "TypeName",
+                selectedEvent?.EventTypeID
+            );
         }
     }
 }

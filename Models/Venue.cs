@@ -18,6 +18,8 @@ namespace EventEase.Models
         public int Capacity { get; set; }
 
         public string? ImageUrl { get; set; }
+        [Required]
+        public bool IsAvailable { get; set; } = true;
 
         [NotMapped]
         public IFormFile? ImageFile { get; set; }
